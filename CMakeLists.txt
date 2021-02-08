@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/.)
+
 project(template)
 
 include(ExternalProject)
@@ -19,7 +21,7 @@ include(BuildGLFW)
 include(BuildGLM)
 
 # template
-set(EXEC template)
+set(EXEC main)
 
 file(GLOB SRC src/*.cpp)
 
