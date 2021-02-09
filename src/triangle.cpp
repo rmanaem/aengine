@@ -12,11 +12,13 @@ const float toRadians = 3.14159265f / 180.0f;
 
 GLuint VAO, VBO, shader, uniformModel;
 
-// Directions for moving the primitive, true for right and false for left
+// Directions for moving the triangle
 bool direction = true;
 float triOffset = 0.0f;
 float triMaxOffset = 0.7f;
 float triIncrement = 0.0005f;
+
+float curveAngle = 0.0f;
 
 // Create VAO and VBO
 void createVertexArrayObject()
@@ -49,7 +51,7 @@ const char *vertexShader()
            "uniform mat4 model;"
            "void main()"
            "{"
-           "    gl_Position = model*vec4(0.4*pos.x, 0.4*pos.y, pos.z, 1.0);"
+           "    gl_Position = model * vec4(0.4 * pos.x, 0.4 * pos.y, pos.z, 1.0);"
            "}";
 }
 
@@ -128,7 +130,7 @@ void compileShaders()
         return;
     }
 
-    // Grab the location of uniform variable XMove
+    // Grab the location of uniform variable
     uniformModel = glGetUniformLocation(shader, "model");
 }
 
@@ -203,6 +205,12 @@ int main()
             direction = !direction;
         }
 
+        curveAngle += 0.001f;
+        if (curveAngle >= 360)
+        {
+            curveAngle -= 360;
+        }
+
         // Clear window
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -211,11 +219,13 @@ int main()
         glUseProgram(shader);
 
         glm::mat4 model(1.0f);
+
+        // Rotation
+        model = glm::rotate(model, curveAngle, glm::vec3(0.0f, 0.0f, 1.0f));
         // Translation
         model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f));
-        // Rotation
-        model = glm::rotate(model, 45 * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
-        // Updating the uniform variable to move the triangle
+
+        // Updating the uniform variable to transform the triangle
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 
         glBindVertexArray(VAO);
