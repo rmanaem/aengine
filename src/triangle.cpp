@@ -8,6 +8,7 @@
 
 // Window dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
+const float toRadians = 3.14159265f / 180.0f;
 
 GLuint VAO, VBO, shader, uniformModel;
 
@@ -210,7 +211,10 @@ int main()
         glUseProgram(shader);
 
         glm::mat4 model(1.0f);
+        // Translation
         model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f));
+        // Rotation
+        model = glm::rotate(model, 45 * toRadians, glm::vec3(0.0f, 0.0f, 1.0f));
         // Updating the uniform variable to move the triangle
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
 
