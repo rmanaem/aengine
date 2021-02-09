@@ -18,7 +18,12 @@ float triOffset = 0.0f;
 float triMaxOffset = 0.7f;
 float triIncrement = 0.0005f;
 
-float curveAngle = 0.0f;
+float rotationAngle = 0.0f;
+
+bool sizeDirection = true;
+float size = 0.4f;
+float maxSize = 0.8f;
+float minSize = 0.1f;
 
 // Create VAO and VBO
 void createVertexArrayObject()
@@ -51,7 +56,7 @@ const char *vertexShader()
            "uniform mat4 model;"
            "void main()"
            "{"
-           "    gl_Position = model * vec4(0.4 * pos.x, 0.4 * pos.y, pos.z, 1.0);"
+           "    gl_Position = model * vec4(pos, 1.0);"
            "}";
 }
 
@@ -205,10 +210,24 @@ int main()
             direction = !direction;
         }
 
-        curveAngle += 0.001f;
-        if (curveAngle >= 360)
+        rotationAngle += 0.001f;
+        if (rotationAngle >= 360)
         {
-            curveAngle -= 360;
+            rotationAngle -= 360;
+        }
+
+        if (sizeDirection)
+        {
+            size += 0.0001f;
+        }
+        else
+        {
+            size -= 0.0001f;
+        }
+
+        if (size >= maxSize || size <= minSize)
+        {
+            sizeDirection = !sizeDirection;
         }
 
         // Clear window
@@ -221,9 +240,11 @@ int main()
         glm::mat4 model(1.0f);
 
         // Rotation
-        model = glm::rotate(model, curveAngle, glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model, rotationAngle, glm::vec3(0.0f, 0.0f, 1.0f));
         // Translation
         model = glm::translate(model, glm::vec3(triOffset, triOffset, 0.0f));
+        // Scale
+        model = glm::scale(model, glm::vec3(size, size, 1.0f));
 
         // Updating the uniform variable to transform the triangle
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
