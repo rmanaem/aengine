@@ -16,8 +16,8 @@ public:
 
     std::string ReadFile(const char *fileLocation);
 
-    GLuint getModelLocation();
-    GLuint getProjectionLocation();
+    GLuint getModelLocation() { return uniformModel; }
+    GLuint getProjectionLocation() { return uniformProjection; }
 
     void useShader();
     void clearShader();

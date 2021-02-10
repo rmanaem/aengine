@@ -44,16 +44,6 @@ std::string Shader::ReadFile(const char *fileLocation)
     return content;
 }
 
-GLuint Shader::getModelLocation()
-{
-    return uniformModel;
-}
-
-GLuint Shader::getProjectionLocation()
-{
-    return uniformProjection;
-}
-
 void Shader::useShader()
 {
     if (shaderID == 0)
