@@ -54,36 +54,15 @@ void createObjects()
 }
 
 // Vertex Shader
-const char *vertexShader()
-{
-    return "#version 330\n"
-           "layout (location = 0) in vec3 pos;"
-           "out vec4 vertexCol;"
-           "uniform mat4 model;"
-           "uniform mat4 projection;"
-           "void main()"
-           "{"
-           "    gl_Position = projection * model * vec4(pos, 1.0);"
-           "    vertexCol = vec4(clamp(pos, 0.0f, 1.0f), 1.0f);"
-           "}";
-}
+const char *vertexShader = "./src/shaders/vertex";
 
 // Fragment Shader
-const char *fragmentShader()
-{
-    return "#version 330\n"
-           "out vec4 color;"
-           "in vec4 vertexCol;"
-           "void main()"
-           "{"
-           "    color = vertexCol;"
-           "}";
-}
+const char *fragmentShader = "./src/shaders/fragment";
 
 void createShaders()
 {
     Shader *shader1 = new Shader();
-    shader1->createFromString(vertexShader(), fragmentShader());
+    shader1->createFromFiles(vertexShader, fragmentShader);
     shaderList.push_back(*shader1);
 }
 
