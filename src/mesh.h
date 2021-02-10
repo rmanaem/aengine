@@ -10,6 +10,7 @@ public:
     void createMesh(GLfloat *vertices, unsigned *indices, unsigned int numOfVertices, unsigned int numOfIndices);
     void renderMesh();
     void clearMesh();
+
     ~Mesh();
 
 private:
