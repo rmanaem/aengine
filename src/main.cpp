@@ -1,218 +1,203 @@
-// Inspired by the following tutorials:
-// - https://learnopengl.com/Getting-started/Hello-Window
-// - https://learnopengl.com/Getting-started/Hello-Triangle
-
 #include <iostream>
+#include <vector>
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "mesh.h"
+#include "shader.h"
 
-#define GLEW_STATIC 1 // This allows linking with Static Library on Windows, without DLL
-#include <GL/glew.h>  // Include GLEW - OpenGL Extension Wrangler
+// Window dimensions
+const GLint WIDTH = 800, HEIGHT = 600;
+const float toRadians = 3.14159265f / 180.0f;
 
-#include <GLFW/glfw3.h> // GLFW provides a cross-platform interface for creating a graphical context,
-                        // initializing OpenGL and binding inputs
+std::vector<Mesh *> meshList;
+std::vector<Shader> shaderList;
 
-#include <glm/glm.hpp> // GLM is an optimized math library with syntax to similar to OpenGL Shading Language
+// Directions for moving the triangle
+bool direction = true;
+float triOffset = 0.0f;
+float triMaxOffset = 0.7f;
+float triIncrement = 0.0005f;
 
-const char *getVertexShaderSource()
+float rotationAngle = 0.0f;
+
+bool sizeDirection = true;
+float size = 0.4f;
+float maxSize = 0.8f;
+float minSize = 0.1f;
+
+// Create VAO and VBO
+void createObjects()
 {
-    // Insert Shaders here ...
-    // For now, you use a string for your shader code, later on, shaders will be stored in .glsl files
 
-    return "#version 330 core\n"
-           "layout (location = 0) in vec3 aPos;"
-           "layout (location = 1) in vec3 aColor;"
-           "out vec3 vertexColor;"
-           "void main()"
-           "{"
-           "   vertexColor = aColor;"
-           "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);"
-           "}";
+    unsigned int indices[] = {
+        0, 3, 1,
+        1, 3, 2,
+        2, 3, 0,
+        0, 1, 2};
+
+    GLfloat vertices[] = {
+        -1.0f, -1.0, 0.0f,
+        0.0f, -1.0f, 1.0f,
+        1.0f, -1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f};
+
+    Mesh *obj1 = new Mesh();
+    obj1->createMesh(vertices, indices, 12, 12);
+    meshList.push_back(obj1);
+
+    Mesh *obj2 = new Mesh();
+    obj2->createMesh(vertices, indices, 12, 12);
+    meshList.push_back(obj2);
 }
 
-const char *getFragmentShaderSource()
+// Vertex Shader
+const char *vertexShader = "./src/shaders/vertex";
+
+// Fragment Shader
+const char *fragmentShader = "./src/shaders/fragment";
+
+void createShaders()
 {
-    return "#version 330 core\n"
-           "in vec3 vertexColor;"
-           "out vec4 FragColor;"
-           "void main()"
-           "{"
-           "   FragColor = vec4(vertexColor.r, vertexColor.g, vertexColor.b, 1.0f);"
-           "}";
+    Shader *shader1 = new Shader();
+    shader1->createFromFiles(vertexShader, fragmentShader);
+    shaderList.push_back(*shader1);
 }
 
-int compileAndLinkShaders()
+int main()
 {
-    // compile and link shader program
-    // return shader program id
-    // ------------------------------------
-
-    // vertex shader
-    int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    const char *vertexShaderSource = getVertexShaderSource();
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-    glCompileShader(vertexShader);
-
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
+    // Initialise GLFW
+    if (!glfwInit())
     {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n"
-                  << infoLog << std::endl;
-    }
-
-    // fragment shader
-    int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    const char *fragmentShaderSource = getFragmentShaderSource();
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n"
-                  << infoLog << std::endl;
-    }
-
-    // link shaders
-    int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
-
-    // check for linking errors
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n"
-                  << infoLog << std::endl;
-    }
-
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-
-    return shaderProgram;
-}
-
-int createVertexArrayObject()
-{
-    // A vertex is a point on a polygon, it contains positions and other data (eg: colors)
-    glm::vec3 vertexArray[] = {
-        glm::vec3(0.0f, 0.5f, 0.0f),   // top center position
-        glm::vec3(1.0f, 0.0f, 0.0f),   // top center color (red)
-        glm::vec3(0.5f, -0.5f, 0.0f),  // bottom right
-        glm::vec3(0.0f, 1.0f, 0.0f),   // bottom right color (green)
-        glm::vec3(-0.5f, -0.5f, 0.0f), // bottom left
-        glm::vec3(0.0f, 0.0f, 1.0f),   // bottom left color (blue)
-    };
-
-    // Create a vertex array
-    GLuint vertexArrayObject;
-    glGenVertexArrays(1, &vertexArrayObject);
-    glBindVertexArray(vertexArrayObject);
-
-    // Upload Vertex Buffer to the GPU, keep a reference to it (vertexBufferObject)
-    GLuint vertexBufferObject;
-    glGenBuffers(1, &vertexBufferObject);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObject);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertexArray), vertexArray, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0,                     // attribute 0 matches aPos in Vertex Shader
-                          3,                     // size
-                          GL_FLOAT,              // type
-                          GL_FALSE,              // normalized?
-                          2 * sizeof(glm::vec3), // stride - each vertex contain 2 vec3 (position, color)
-                          (void *)0              // array buffer offset
-    );
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, // attribute 1 matches aColor in Vertex Shader
-                          3,
-                          GL_FLOAT,
-                          GL_FALSE,
-                          2 * sizeof(glm::vec3),
-                          (void *)sizeof(glm::vec3) // color is offseted a vec3 (comes after position)
-    );
-    glEnableVertexAttribArray(1);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // VAO already stored the state we just defined, safe to unbind buffer
-    glBindVertexArray(0);             // Unbind to not modify the VAO
-
-    return vertexArrayObject;
-}
-
-int main(int argc, char *argv[])
-{
-    // Initialize GLFW and OpenGL version
-    glfwInit();
-
-#if defined(PLATFORM_OSX)
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#else
-    // On windows, we set OpenGL version to 2.1, to support more hardware
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-#endif
-
-    // Create Window and rendering context using GLFW, resolution is 800x600
-    GLFWwindow *window = glfwCreateWindow(800, 600, "Triangle Template", NULL, NULL);
-    if (window == NULL)
-    {
-        std::cerr << "Failed to create GLFW window" << std::endl;
+        std::cout << "GLFW initialization failed!!!" << std::endl;
         glfwTerminate();
-        return -1;
+        return 1;
     }
-    glfwMakeContextCurrent(window);
 
-    // Initialize GLEW
-    glewExperimental = true; // Needed for core profile
+    // Set up GLFW window properties
+    // openGL version
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    // Core profile = No Backwards Compatibility
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    // Allow forward Compatibility
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+
+    GLFWwindow *mainWindow = glfwCreateWindow(WIDTH, HEIGHT, "Triangle", NULL, NULL);
+    if (!mainWindow)
+    {
+        std::cout << "GLFW window creation failed!!!" << std::endl;
+        glfwTerminate();
+        return 1;
+    }
+
+    // Get Buffer size information
+    int bufferWidth, bufferHeight;
+    glfwGetFramebufferSize(mainWindow, &bufferWidth, &bufferHeight);
+
+    // Set context for GLEW to use
+    glfwMakeContextCurrent(mainWindow);
+
+    // Allow modern extension features
+    glewExperimental = GL_TRUE;
+
     if (glewInit() != GLEW_OK)
     {
-        std::cerr << "Failed to create GLEW" << std::endl;
+        std::cout << "GLEW initialization failed!!!" << std::endl;
+        glfwDestroyWindow(mainWindow);
         glfwTerminate();
-        return -1;
+        return 1;
     }
 
-    // Black background
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
 
-    // Compile and link shaders here ...
-    int shaderProgram = compileAndLinkShaders();
+    // Setup Viewport size
+    glViewport(0, 0, bufferWidth, bufferHeight);
 
-    // Define and upload geometry to the GPU here ...
-    int vao = createVertexArrayObject();
+    createObjects();
+    createShaders();
 
-    // Entering Main Loop
-    while (!glfwWindowShouldClose(window))
+    GLuint uniformModel = 0, uniformProjection = 0;
+
+    // Proejction matrix
+    glm::mat4 projection = glm::perspective(45.0f, (GLfloat)bufferWidth / (GLfloat)bufferHeight, 0.1f, 100.0f);
+
+    // Loop until window closed
+    while (!glfwWindowShouldClose(mainWindow))
     {
-        // Each frame, reset color of each pixel to glClearColor
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        // draw rainbow triangle
-        glUseProgram(shaderProgram);
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3); // 3 vertices, starting at index 0
-        glBindVertexArray(0);
-
-        // End frame
-        glfwSwapBuffers(window);
-
-        // Detect inputs
+        // Get and handle user input events
         glfwPollEvents();
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, true);
-    }
+        if (direction)
+        {
+            triOffset += triIncrement;
+        }
+        else
+        {
+            triOffset -= triIncrement;
+        }
 
-    // Shutdown GLFW
-    glfwTerminate();
+        if (abs(triOffset) >= triMaxOffset)
+        {
+            direction = !direction;
+        }
+
+        rotationAngle += 0.0001f;
+        if (rotationAngle >= 360)
+        {
+            rotationAngle -= 360;
+        }
+
+        if (sizeDirection)
+        {
+            size += 0.0001f;
+        }
+        else
+        {
+            size -= 0.0001f;
+        }
+
+        if (size >= maxSize || size <= minSize)
+        {
+            sizeDirection = !sizeDirection;
+        }
+
+        // Clear window
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Drawing the triangle
+        shaderList[0].useShader();
+        uniformModel = shaderList[0].getModelLocation();
+        uniformProjection = shaderList[0].getProjectionLocation();
+
+        // Model matrix
+        glm::mat4 model(1.0f);
+
+        // Translation
+        model = glm::translate(model, glm::vec3(triOffset, 0.0f, -2.5f));
+        // Rotation
+        // model = glm::rotate(model, rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+        // Scale
+        model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+
+        // Updating the uniform variable to transform the triangle
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+        meshList[0]->renderMesh();
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-triOffset, 1.0f, -2.5f));
+        model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        meshList[1]->renderMesh();
+
+        glUseProgram(0);
+
+        glfwSwapBuffers(mainWindow);
+    }
 
     return 0;
 }
