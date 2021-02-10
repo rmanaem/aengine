@@ -1,16 +1,19 @@
 #include <iostream>
-#include <string.h>
+#include <vector>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "mesh.h"
 
 // Window dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
 const float toRadians = 3.14159265f / 180.0f;
 
-GLuint VAO, VBO, IBO, shader, uniformModel, uniformProjection;
+std::vector<Mesh *> meshList;
+
+GLuint shader, uniformModel, uniformProjection;
 
 // Directions for moving the triangle
 bool direction = true;
@@ -41,25 +44,13 @@ void createVertexArrayObject()
         1.0f, -1.0f, 0.0f,
         0.0f, 1.0f, 0.0f};
 
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
+    Mesh *obj1 = new Mesh();
+    obj1->createMesh(vertices, indices, 12, 12);
+    meshList.push_back(obj1);
 
-    glGenBuffers(1, &IBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-    glBindVertexArray(0);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    Mesh *obj2 = new Mesh();
+    obj2->createMesh(vertices, indices, 12, 12);
+    meshList.push_back(obj2);
 }
 
 // Vertex Shader
@@ -265,21 +256,22 @@ int main()
         glm::mat4 model(1.0f);
 
         // Translation
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, -2.5f));
+        model = glm::translate(model, glm::vec3(triOffset, 0.0f, -2.5f));
         // Rotation
-        model = glm::rotate(model, rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
+        // model = glm::rotate(model, rotationAngle, glm::vec3(0.0f, 1.0f, 0.0f));
         // Scale
         model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 
         // Updating the uniform variable to transform the triangle
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+        meshList[0]->renderMesh();
 
-        glBindVertexArray(VAO);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-        glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(-triOffset, 1.0f, -2.5f));
+        model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
+        glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
+        meshList[1]->renderMesh();
 
         glUseProgram(0);
 
