@@ -1,6 +1,7 @@
 #pragma once
 
-#include <string.h>
+#include <string>
+#include <Cstring>
 #include <iostream>
 #include <fstream>
 #include <GL/glew.h>
@@ -11,6 +12,9 @@ public:
     Shader();
 
     void createFromString(const char *vertexCode, const char *fragmentCode);
+    void createFromFiles(const char *vertexLocation, const char *fragmentLocation);
+
+    std::string ReadFile(const char *fileLocation);
 
     GLuint getModelLocation();
     GLuint getProjectionLocation();
