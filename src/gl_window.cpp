@@ -1,4 +1,4 @@
-#include "glWindow.h"
+#include "gl_window.h"
 
 GLWindow::GLWindow()
 {
