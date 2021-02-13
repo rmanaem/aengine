@@ -8,6 +8,7 @@
 #include "gl_window.h"
 #include "mesh.h"
 #include "shader.h"
+#include "camera.h"
 
 // Window dimensions
 const GLint WIDTH = 800, HEIGHT = 600;
@@ -17,6 +18,10 @@ const float toRadians = 3.14159265f / 180.0f;
 GLWindow mainWindow;
 std::vector<Mesh *> meshList;
 std::vector<Shader> shaderList;
+Camera camera;
+
+GLfloat deltaTime = 0.0f;
+GLfloat lastTime = 0.0f;
 
 // Create VAO, VBO, and IBO
 void createObjects()
@@ -64,7 +69,10 @@ int main()
     createObjects();
     createShaders();
 
-    GLuint uniformModel = 0, uniformProjection = 0;
+    camera = Camera(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f, 0.0005f, 0.1f);
+
+    GLuint uniformModel = 0,
+           uniformProjection = 0, uniformView = 0;
 
     // Proejction matrix
     glm::mat4 projection = glm::perspective(45.0f, mainWindow.getBufferWidth() / mainWindow.getBufferHeight(), 0.1f, 100.0f);
@@ -72,8 +80,17 @@ int main()
     // Loop until window closed
     while (!mainWindow.getShouldClose())
     {
+
+        GLfloat now = glfwGetTime();
+        deltaTime = now - lastTime;
+        lastTime - now;
+
         // Get and handle user input events
         glfwPollEvents();
+
+        // Check for key and mouse presses
+        camera.keyControl(mainWindow.getKeys(), deltaTime);
+        camera.mouseControl(mainWindow.getXChange(), mainWindow.getYChange());
 
         // Clear window
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -83,6 +100,7 @@ int main()
         shaderList[0].useShader();
         uniformModel = shaderList[0].getModelLocation();
         uniformProjection = shaderList[0].getProjectionLocation();
+        uniformView = shaderList[0].getViewLocation();
 
         // Model matrix
         glm::mat4 model(1.0f);
@@ -94,9 +112,10 @@ int main()
         // Scale
         model = glm::scale(model, glm::vec3(0.4f, 0.4f, 1.0f));
 
-        // Updating the uniform variable to transform the triangle
+        // Updating the uniform variable
         glUniformMatrix4fv(uniformModel, 1, GL_FALSE, glm::value_ptr(model));
         glUniformMatrix4fv(uniformProjection, 1, GL_FALSE, glm::value_ptr(projection));
+        glUniformMatrix4fv(uniformView, 1, GL_FALSE, glm::value_ptr(camera.calculateViewMatrix()));
         meshList[0]->renderMesh();
 
         model = glm::mat4(1.0f);
