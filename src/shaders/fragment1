@@ -1,0 +1,10 @@
+#version 330
+
+out vec4 FragColor;
+
+in vec4 vertexCol;
+           
+void main()
+{
+    FragColor = vertexCol;
+}
