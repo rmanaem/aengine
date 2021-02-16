@@ -44,7 +44,7 @@ int GLWindow::initialize()
     // Allow forward Compatibility
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    window = glfwCreateWindow(width, height, "Triangle", NULL, NULL);
+    window = glfwCreateWindow(width, height, "AEngine", NULL, NULL);
     if (!window)
     {
         std::cout << "GLFW window creation failed!!!" << std::endl;
