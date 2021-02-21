@@ -1,4 +1,4 @@
-# OpenGL Templates
+# AEngine
 
 ## Build Instructions
 
